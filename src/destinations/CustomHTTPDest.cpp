@@ -7,17 +7,21 @@
 #include "MenuHandler.hpp"
 #include "plugins/PropertyList.hpp"
 #include "plugins/AT_FW_Plugin.hpp"
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
+
 extern NeopixelVE neopixel; // there was a reason to put it here and not in commons
 
 CustomHTTPDest::CustomHTTPDest() {
   registerDestination(this);
 }
 
-void CustomHTTPDest::setup(MenuHandler *handler) {
+bool CustomHTTPDest::setup(MenuHandler *handler) {
   handler->registerCommand(new MenuEntry(F("custom_url_add"), CMD_BEGIN, &CustomHTTPDest::menuAddCustomUrl, F("custom_url_add \"idx\",\"url\"")));
   handler->registerCommand(new MenuEntry(F("custom_url_jadd"), CMD_BEGIN, &CustomHTTPDest::menuAddCustomUrlJ, F("custom_url_add \"idx\",\"url\"")));
   handler->registerCommand(new MenuEntry(F("custom_url_clean"), CMD_EXACT, &CustomHTTPDest::menuCleanCustomUrl, F("custom_url_clean - clean all custom urls")));
   handler->registerCommand(new MenuEntry(F("call_url"), CMD_BEGIN, &CustomHTTPDest::cmdCallUrl, F("call_url http://xxx  or call_url {\"url\"=\"<url>\", \"method\"=\"POST|GET..\", \"ct\"=\"content-type\", \"pay\"=\"body payload\"}")));
+  return false;
 }
 
 void CustomHTTPDest::menuCleanCustomUrl(const char *line) {
@@ -81,9 +85,11 @@ bool CustomHTTPDest::process(LinkedList<Pair *> &data) {
   bool status = true;
   do {
     String s = PropertyList.getArrayProperty(F("custom_url_arr"), i++);
-    if (!s.length()) return i == 1 || status;
-    status = status && isOKResponse(invokeURL(s, data));
+    if (!s.length()) break;
+    status = isOKResponse(invokeURL(s, data)) && status;
   } while(true);
+
+  return (i==1) ? false : status;
   return status;
 }
 
@@ -111,7 +117,7 @@ int CustomHTTPDest::invokeURL(String &s, LinkedList<Pair *> &data) {
 }
 
 int CustomHTTPDest::invokeURL(String &url, String &method, String &contentType, String &pay) {
-  if (waitForWifi() != WL_CONNECTED) return -10;
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return -10;
   LOGGER << F("Calling HTTP: [") << url << "]" << endl;
   if (pay.length()) LOGGER << F("CustomHTTPDest::payload = ") << pay << endl;
   LOGGER.flush();

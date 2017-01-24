@@ -128,6 +128,7 @@ char* getListItem(const char* str, char *buf, int idx, char sep) {
 
 int getListItemCount(const char* str) {
   char buf[200];
+  if (!*str) return 0;
   char *p;
   int i=0;
   for (; (p = getListItem(str, buf, i)) != NULL; i++);
@@ -135,11 +136,11 @@ int getListItemCount(const char* str) {
 }
 
 char decimalSeparator = 0;
+void initDecimalSeparator() {
+  decimalSeparator = PropertyList.readProperty(PROP_DECIMAL_SEPARATOR)[0];
+  if (!decimalSeparator) decimalSeparator = '.';
+}
+
 void replaceDecimalSeparator(String &src) {
-  if (!decimalSeparator) {
-    decimalSeparator = PropertyList.readProperty(PROP_DECIMAL_SEPARATOR)[0];
-    if (!decimalSeparator) decimalSeparator = '.';
-    LOGGER << "Decimal Separator is: " << decimalSeparator << endl;
-  }
   src.replace('.', decimalSeparator);
 }

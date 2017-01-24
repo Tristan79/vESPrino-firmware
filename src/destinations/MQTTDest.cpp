@@ -9,7 +9,8 @@
 #include "plugins/AT_FW_Plugin.hpp"
 #include <PubSubClient.h>
 #include <ESP8266WiFi.h>
-
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
 extern MQTTDest mqttDest;
 #define PROP_MQTT_SUBS_TOPIC F("mqtt.subs.topic")
 #define PROP_MQTT_LISTEN F("mqtt.listen")
@@ -18,17 +19,19 @@ MQTTDest::MQTTDest() {
   registerDestination(this);
 }
 
-void MQTTDest::setup(MenuHandler *handler) {
+bool MQTTDest::setup(MenuHandler *handler) {
   handler->registerCommand(new MenuEntry(F("mqtt_setup"), CMD_BEGIN, &MQTTDest::cmdMqttSetup, F("mqtt_setup \"idx\"value")));
   handler->registerCommand(new MenuEntry(F("mqtt_msg_add"), CMD_BEGIN, &MQTTDest::cmdMqttMsgAdd, F("mqtt_msg_add \"idx\"value")));
   handler->registerCommand(new MenuEntry(F("call_mqtt"), CMD_BEGIN, &MQTTDest::cmdCallMqtt, F("call_mqtt topic message")));
   handler->registerCommand(new MenuEntry(F("mqtt_msg_clean"), CMD_EXACT, &MQTTDest::cmdCleanCustomUrl, F("mqtt_msg_clean - clean all mqtt messages")));
   if (PropertyList.readBoolProperty(PROP_MQTT_LISTEN)) {
+    mqttListen = true;
     if (!mqttStart()) {
       mqttEnd(false);
-      return;
+      return false;
     }
   }
+  return false;
 }
 
 void MQTTDest::setupMqttListen() {
@@ -49,7 +52,7 @@ void MQTTDest::setupMqttListen() {
 }
 
 void MQTTDest::cmdMqttSetup(const char *p) {
-  char mqttServer[30], mqttPortS[6], mqttClient[20], mqttUser[45], mqttPass[15], mqttTopic[40];
+  char mqttServer[30], mqttPortS[6], mqttClient[20], mqttUser[45], mqttPass[45], mqttTopic[40];
   p = extractStringFromQuotes(p, mqttServer, sizeof(mqttServer));
   p = extractStringFromQuotes(p, mqttPortS,   sizeof(mqttPortS));
   p = extractStringFromQuotes(p, mqttClient, sizeof(mqttClient));
@@ -116,7 +119,7 @@ void MQTTDest::cmdCallMqttInst(const char *line) {
   String msg = x+1;
   LOGGER << F("Will send mqtt to:") << topic <<":[" << msg << "]" << endl;
   LOGGER.flush();
-  if (waitForWifi() != WL_CONNECTED) return;
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return;
 
   if (!mqttStart()) {
     mqttEnd(false);
@@ -132,7 +135,7 @@ bool MQTTDest::process(LinkedList<Pair *> &data) {
   LOGGER << F("MQTTDest::process") << endl;
   LOGGER.flush();
 //  heap("");
-  if (PropertyList.readBoolProperty(PROP_MQTT_LISTEN)) {
+  if (mqttListen) {
     if (!client ) {
       if (!mqttStart()) {
         mqttEnd(false);
@@ -141,7 +144,7 @@ bool MQTTDest::process(LinkedList<Pair *> &data) {
   }
   String s = PropertyList.getArrayProperty(F("mqtt_msg_arr"), 0);
   if (!s.length()) return true;
-  if (waitForWifi() != WL_CONNECTED) return false;
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return false;
 
   if (!mqttStart()) {
     mqttEnd(false);
@@ -149,13 +152,15 @@ bool MQTTDest::process(LinkedList<Pair *> &data) {
   }
   //int i=0;
   String mqttTopic = F("vair");//  = PropertyList.readProperty(EE_MQTT_TOPIC);
+  bool status = true;
   for (int i=0; ; i++) {
     s = PropertyList.getArrayProperty(F("mqtt_msg_arr"), i);
     if (!s.length()) break;
     replaceValuesInURL(data, s);
     if (hasPlaceholders(s)) {
-      mqttEnd(false);
-      return false;
+      status = false;
+      //mqttEnd(false);
+      continue;
     }
     if (s.indexOf(':') > -1) {
       mqttTopic = s.substring(0,s.indexOf(':'));
@@ -169,7 +174,7 @@ bool MQTTDest::process(LinkedList<Pair *> &data) {
     }
   }
   mqttEnd(true);
-  return true;
+  return status;
   //heap("");
 }
 
@@ -198,7 +203,7 @@ bool MQTTDest::reconnect() {
 }
 
 bool MQTTDest::mqttStart() {
-  if (waitForWifi() != WL_CONNECTED) {
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) {
     if (DEBUG) LOGGER << F("MQTT Dest: Cannot send while wifi offline\n");
     return false;
   }

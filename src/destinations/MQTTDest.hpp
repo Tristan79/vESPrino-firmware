@@ -14,7 +14,7 @@
 class MQTTDest : public Destination {
 public:
   MQTTDest();
-  void setup(MenuHandler *handler);
+  bool setup(MenuHandler *handler);
   void loop();
   static void cmdMqttSetup(const char *line);
   static void cmdMqttMsgAdd(const char *line);
@@ -37,6 +37,7 @@ private:
   WiFiClient *wclient;
   bool isListening = false;
   void setupMqttListen();
+  bool mqttListen = false;
   //static const __FlashStringHelper* PROP_CUSTOM_URL_ARR;// = F("custom_url_arr");
 };
 

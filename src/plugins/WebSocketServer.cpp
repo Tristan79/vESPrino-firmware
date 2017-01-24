@@ -3,6 +3,8 @@
 #include <Timer.h>
 #include <ESP8266NetBIOS.h>
 #include <ESP8266mDNS.h>
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
 
 //const char* apiKey = "Qw8rdb20aV";
 //http://randomkeygen.com/
@@ -12,43 +14,62 @@ WebSocketServerClass::WebSocketServerClass() {
   registerPlugin(this);
 }
 
-void WebSocketServerClass::setup(MenuHandler *handler) {
-  handler->registerCommand(new MenuEntry(F("wss_start"), CMD_BEGIN, WebSocketServerClass::cmdStartWebSocketServer, F("wss_start")));
+bool WebSocketServerClass::setup(MenuHandler *handler) {
+  handler->registerCommand(new MenuEntry(F("wss_start"), CMD_BEGIN, WebSocketServerClass::cmdStartServer, F("wss_start")));
+  handler->registerCommand(new MenuEntry(F("wss_stop"), CMD_EXACT, WebSocketServerClass::cmdStopServer, F("wss_stop")));
   if (!PowerManager.isWokeFromDeepSleep() && PropertyList.readBoolProperty(PROP_WSSERVER_STARTONBOOT)) {
     menuHandler.scheduleCommand("wss_start");
   }
+  return false;
+
 }
 
-void WebSocketServerClass::cmdStartWebSocketServer(const char *ignore) {
-  myWSS.cmdStartWebSocketServerInst();
+void WebSocketServerClass::cmdStartServer(const char *ignore) {
+  myWSS.cmdStartServerInst();
 }
+
+void WebSocketServerClass::cmdStopServer(const char *ignore) {
+  myWSS.cmdStopServerInst();
+}
+
+void WebSocketServerClass::cmdStopServerInst() {
+  if (server!= NULL) {
+    delete server;
+    server = NULL;
+  }
+}
+
+
 void WebSocketServerClass::loop() {
   if (server != NULL) server->loop();
 }
 
-void WebSocketServerClass::cmdStartWebSocketServerInst() {
+void WebSocketServerClass::cmdStartServerInst() {
   if (server != NULL) delete server;
-  if (waitForWifi() != WL_CONNECTED) return;
-  server = new WebSocketsServer(81);
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return;
+  server = new WebSocketsServer(8266);
   //menuHandler.scheduleCommand("nop 0");
   //server->on("/", WebSocketServerClass::onCommand);
   server->begin();
   server->onEvent(WebSocketServerClass::onWebSocketEvent);
 
-  LOGGER.print(F("\n\nSend commands to http://"));
-  LOGGER.print(WiFi.localIP());
-  LOGGER.println(F("/?cmd=..."));
-
-  String hostname = PropertyList.readProperty(PROP_ESP_HOSTNAME);
-  if (hostname.length() == 0) hostname = "vthing";
-  LOGGER << F("Web Server accessible on :") << endl;
-  LOGGER << F("   http://") << WiFi.localIP() << endl;
-  if (MDNS.begin(hostname.c_str())) {
-    LOGGER << F("   http://") << hostname << F(".local/") << endl;
-    MDNS.addService("http", "tcp", 80);
-  }
-  NBNS.begin(hostname.c_str());
-  LOGGER << F("   http://") << hostname << F("/") << endl;
+  LOGGER << F("\n\nWebSockets Server started on wss://") << WiFi.localIP() << F(":") << 8266 << endl;
+  LOGGER.flush();
+  LOGGER << F("Open http://config.vair-monitor.com to configure device online") << endl;
+  LOGGER.flush();
+  // LOGGER.print(WiFi.localIP());
+  // LOGGER.println(F("/?cmd=..."));
+  //
+  // String hostname = PropertyList.readProperty(PROP_ESP_HOSTNAME);
+  // if (hostname.length() == 0) hostname = "vthing";
+  // LOGGER << F("Web Server accessible on :") << endl;
+  // LOGGER << F("   http://") << WiFi.localIP() << endl;
+  // if (MDNS.begin(hostname.c_str())) {
+  //   LOGGER << F("   http://") << hostname << F(".local/") << endl;
+  //   MDNS.addService("http", "tcp", 80);
+  // }
+  // NBNS.begin(hostname.c_str());
+  // LOGGER << F("   http://") << hostname << F("/") << endl;
 }
 
 void WebSocketServerClass::sendData(uint8_t * payload, size_t length) {
@@ -74,6 +95,7 @@ void WebSocketServerClass::onWebSocketEventInst(uint8_t num, WStype_t type, uint
                   LOGGER.setLogToWSS(true);
                   server->sendTXT(num, "Connected");
                   LOGGER.printf(String(F("[%u] Connected from %d.%d.%d.%d url: %s\n")).c_str(), num, ip[0], ip[1], ip[2], ip[3], payload);
+                  LOGGER.flush();
 
   				// send message to client
               }

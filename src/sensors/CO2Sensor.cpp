@@ -10,12 +10,14 @@
 #include "CO2Sensor.hpp"
 #include <LinkedList.h>
 #include <I2CHelper.hpp>
+#include "plugins/TimerManager.hpp"
+extern TimerManagerClass TimerManager;
 
 extern CO2Sensor co2Sensor;
 
 #define CUBIC_PRESENT "present"
 #define CUBIC_MISSING "missing"
-
+extern TimerManagerClass TimerManager;
 CO2Sensor::CO2Sensor() :
     co2Threshold("CO2", 1),
     cubicCo2(&CO2Sensor::onCo2Status_static, EE_RESET_CO2_1B, &LOGGER),
@@ -26,16 +28,16 @@ CO2Sensor::CO2Sensor() :
 }
 
 
-void CO2Sensor::setup(MenuHandler *handler) {
+bool CO2Sensor::setup(MenuHandler *handler) {
   if (!rtcMemStore.hasSensor(RTC_SENSOR_CUBICCO2)) {
     hasSensor = false;
-    return;
+    return hasSensor;
   }
   String state = PropertyList.readProperty(PROP_NO_CUBIC_CO2);
   if (state == CUBIC_MISSING) {
     hasSensor = false;
     rtcMemStore.setSensorState(RTC_SENSOR_CUBICCO2, false);
-    return;
+    return hasSensor;
   }
   // pinMode(D8, OUTPUT);    //enable power via D8
   // digitalWrite(D8, HIGH);
@@ -51,7 +53,7 @@ void CO2Sensor::setup(MenuHandler *handler) {
     hasSensor = false;
     rtcMemStore.setSensorState(RTC_SENSOR_CUBICCO2, false);
     if (state != CUBIC_PRESENT) PropertyList.putProperty(PROP_NO_CUBIC_CO2, CUBIC_MISSING);
-    return;
+    return hasSensor;
   }
 
   if (state != CUBIC_PRESENT) {
@@ -72,6 +74,7 @@ void CO2Sensor::setup(MenuHandler *handler) {
   if (!PropertyList.readBoolProperty(PROP_CUBIC_CO2_POWERSAFE)) {
     menuHandler.scheduleCommand("nop 0");
   }
+  return hasSensor;
 }
 
 const char* CO2Sensor::getSensorId() {
@@ -120,11 +123,11 @@ void CO2Sensor::onCo2Status(CubicStatus status) {
     menuHandler.scheduleCommand("ledcolor blue");
     tmrStopLED->Stop();
   } else if (status == CB_WARMUP) {
-    menuHandler.scheduleCommand("ledcolor yellow");
+    //menuHandler.scheduleCommand("ledcolor yellow");
   } else if (status == CB_STARTED) {
     if (!PropertyList.readBoolProperty(PROP_CUBIC_CO2_POWERSAFE)) {
-      menuHandler.scheduleCommand("ledcolor green");
-      tmrStopLED->Start();
+      //menuHandler.scheduleCommand("ledcolor green");
+      //tmrStopLED->Start();
     }
   }
 }

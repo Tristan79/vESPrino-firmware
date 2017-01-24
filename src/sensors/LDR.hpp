@@ -1,22 +1,22 @@
-#ifndef TestSensor_h
-#define TestSensor_h
+#ifndef LDR_h
+#define LDR_h
 
 #include "interfaces/Sensor.hpp"
 #include <LinkedList.h>
 #include "interfaces/Pair.h"
 
-class TestSensor : public Sensor {
+class LDR : public Sensor {
 public:
-  TestSensor();
+  LDR();
   bool setup(MenuHandler *handler);
   void getData(LinkedList<Pair*> *data);
   const char* getName() {
-    return "TEST";
+    return "LDR";
   }
-  static void toggle(const char *line);
-  void toggleInst();
+  static void test(const char *line);
+  //void toggleInst();
 
 private:
-  bool enabled = false;
+  //bool enabled = false;
 };
 #endif

@@ -1,5 +1,8 @@
 #include "plugins/AT_FW_Plugin.hpp"
 #include "common.hpp"
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
+
 extern char atCIPSTART_IP[20];
 void AT_FW_Plugin::registerCommands(MenuHandler *handler) {
   // else if (line[0] == 'A') mockATCommand(line);
@@ -22,7 +25,7 @@ void AT_FW_Plugin::atCIPSTART(const char *p) {
 
 void AT_FW_Plugin::mockATCommand(const char *line) {
   if (line[0] == 'A') {
-    if (strstr(line, "AT+CWJAP_DEF")) setWifi(line);
+    if (strstr(line, "AT+CWJAP_DEF")) WifiStuff.setWifi(line);
     if (strstr(line, "AT+CIPSTART")) atCIPSTART(line);
 
     if (strstr(line, "AT+CIPSEND"))  LOGGER << ">" << endl;
@@ -31,8 +34,7 @@ void AT_FW_Plugin::mockATCommand(const char *line) {
 }
 
 int AT_FW_Plugin::processResponseCodeATFW(HTTPClient *http, int rc) {
-  if (rc > 0) LOGGER << F("Response Code: ") << rc << endl;
-  else LOGGER << F("Error Code: ") << rc << " = " << http->errorToString(rc).c_str() << endl;
+  if (rc <= 0) LOGGER << F("Error Code: ") << rc << " = " << http->errorToString(rc).c_str() << endl;
   if (rc > 0) {
     if (DEBUG) {
       LOGGER << F("Payload: [");

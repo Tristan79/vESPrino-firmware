@@ -4,6 +4,8 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266NetBIOS.h>
 #include <ESP8266mDNS.h>
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
 
 const char* apiKey = "Qw8rdb20aV";
 //http://randomkeygen.com/
@@ -13,11 +15,13 @@ WebServerClass::WebServerClass() {
   registerPlugin(this);
 }
 
-void WebServerClass::setup(MenuHandler *handler) {
+bool WebServerClass::setup(MenuHandler *handler) {
   handler->registerCommand(new MenuEntry(F("webserver_start"), CMD_BEGIN, WebServerClass::cmdStartWebServer, F("webserver_start")));
   if (!PowerManager.isWokeFromDeepSleep() && PropertyList.readBoolProperty(PROP_WEBSERVER_STARTONBOOT)) {
     menuHandler.scheduleCommand("webserver_start");
   }
+  return false;
+
 }
 
 void WebServerClass::cmdStartWebServer(const char *ignore) {
@@ -29,7 +33,7 @@ void WebServerClass::loop() {
 
 void WebServerClass::cmdStartWebServerInst() {
   if (server != NULL) delete server;
-  if (waitForWifi() != WL_CONNECTED) return;
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return;
   server = new ESP8266WebServer(80);
   //menuHandler.scheduleCommand("nop 0");
   server->on("/", WebServerClass::onCommand);

@@ -1,6 +1,10 @@
 #include "plugins/Dweet_io.hpp"
 #include "MenuHandler.hpp"
 #include <Timer.h>
+#include "plugins/TimerManager.hpp"
+extern TimerManagerClass TimerManager;
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
 
 #define PROP_DWEET_CMDKEY F("dweet.cmdkey")
 #define PROP_DWEET_AUTOSTART F("dweet.autostart")
@@ -10,7 +14,7 @@ DweetIOClass::DweetIOClass() {
   registerPlugin(this);
 }
 
-void DweetIOClass::setup(MenuHandler *handler) {
+bool DweetIOClass::setup(MenuHandler *handler) {
   handler->registerCommand(new MenuEntry(F("dweet_start"), CMD_BEGIN, DweetIOClass::cmdDweetStart, F("dweet_start interval_Sec")));
   handler->registerCommand(new MenuEntry(F("dweet_process"), CMD_EXACT, DweetIOClass::cmdDweetProcess, F("dweet_process - checks if there are new dweets")));
   String s = PropertyList.readProperty(PROP_DWEET_AUTOSTART);
@@ -20,6 +24,8 @@ void DweetIOClass::setup(MenuHandler *handler) {
     //cmdDweetStart(s.c_str());
   }
   isAcceptStoredDweets = PropertyList.readBoolProperty(PROP_DWEET_ACCEPT_STORED_DWEETS);
+  return false;
+
 }
 
 void DweetIOClass::cmdDweetStart(const char *cmd) {
@@ -58,13 +64,13 @@ void DweetIOClass::onGetDweets() {
 }
 
 bool DweetIOClass::getDweetCommand(char *cmd) {
-    if (waitForWifi() != WL_CONNECTED) return false;
+    if (WifiStuff.waitForWifi() != WL_CONNECTED) return false;
     uint32_t mstart = millis();
     char lastDweet[30];
     rtcMemStore.getLastDweet(lastDweet);
 
     if (!dwKey.length()) return false;
-    if (waitForWifi() != WL_CONNECTED) return false ;
+    if (WifiStuff.waitForWifi() != WL_CONNECTED) return false ;
     String url = String(F("http://dweet.io/get/latest/dweet/for/")) + dwKey;
 
     HTTPClient http;

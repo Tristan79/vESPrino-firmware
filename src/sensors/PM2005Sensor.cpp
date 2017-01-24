@@ -15,23 +15,25 @@ void dump(uint8_t *r, int len) {
   LOGGER.println();
 }
 
-void PM2005Sensor::setup(MenuHandler *handler) {
+bool PM2005Sensor::setup(MenuHandler *handler) {
   if (!rtcMemStore.hasSensor(RTC_SENSOR_PM2005)) {
     hasSensor = false;
-    return;
+    return hasSensor;
   }
   handler->registerCommand(new MenuEntry(F("pm2005quiet"), CMD_BEGIN, &PM2005Sensor::onCmdQuiet, F("pm2005quiet 22:00,03:00,180 (start, end, tz offset in minutes)")));
   handler->registerCommand(new MenuEntry(F("pm2005int"), CMD_BEGIN, &PM2005Sensor::onCmdInterval, F("pm2005int 20,3600 (measure time in seconds - active, quiet (<300sec = dynamic mode)")));
   if (I2CHelper::i2cSDA > -1 && I2CHelper::checkI2CDevice(0x28)) {
-    LOGGER << F("Found PM2005 - Dust / Particle Sensor\n");
+    //LOGGER << F("Found PM2005 - Dust / Particle Sensor\n");
     hasSensor = true;
     checkMode();
   } else{
     rtcMemStore.setSensorState(RTC_SENSOR_PM2005, false);
   }
+  return hasSensor;
+
 }
 
-void PM2005Sensor::checkMode() {
+void PM2005Sensor::checkMode(LinkedList<Pair *> *data) {
   Wire.setClock(10000);
   int pm25, pm10, mode, status;
   if (!intReadData(pm25, pm10, status, mode)) return;
@@ -52,6 +54,10 @@ void PM2005Sensor::checkMode() {
   LOGGER.flush();
   if (interval < 300 && mode != 5) setDynamicMode();
   else if (interval >= 300 && mode != interval) setTimingMeasuringMode(interval);
+  if (data) {
+    data->add(new Pair("PMMODE", String(mode)));
+    data->add(new Pair("PMINT", String(interval)));
+  }
   //intReadData(pm25, pm10, status, mode);
 }
 
@@ -81,7 +87,7 @@ void PM2005Sensor::onCmdInterval(const char *line) {
 
 void PM2005Sensor::getData(LinkedList<Pair *> *data) {
   if (!hasSensor) return;
-  checkMode();
+  checkMode(data);
   int pm25, pm10, mode, status;
   if (!intReadData(pm25, pm10, status, mode)) return;
   data->add(new Pair("PM25", String(pm25)));
@@ -125,7 +131,7 @@ void PM2005Sensor::sendCommand(uint8_t *toSend) {
   Wire.setClock(10000);
   int res = -1;
   for (int i=1; i <=6; i++) toSend[7] ^= toSend[i];
-  dump(toSend, 8);
+  if (DEBUG) dump(toSend, 8);
 
   for (int i=0; i<5; i++) {
     Wire.beginTransmission(0x28);

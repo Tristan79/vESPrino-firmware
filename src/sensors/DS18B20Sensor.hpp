@@ -9,12 +9,21 @@
 class DS18B20Sensor : public Sensor {
 public:
   DS18B20Sensor();
-  void setup(MenuHandler *handler);
+  bool setup(MenuHandler *handler);
   void getData(LinkedList<Pair*> *data);
   const char* getName() {
     return "DS18B20";
   }
 
+  static void scanBus(const char *ignore);
+  static void readTemperatures(const char *ignore);
+  void scanBusInst();
+  void readTemperaturesInst(LinkedList<float> *list = NULL);
+  double getAverageTemperature(LinkedList<float> *list);
+  static void computeTempAdjustments(const char *ignore);
+  void computeTempAdjustmentsInst();
+  bool readAdjustedTemperatures(LinkedList<float> *list);
+  void appendTemperatures(LinkedList<Pair *> *data);
 
 private:
   OneWire *oneWireP;

@@ -13,13 +13,13 @@
 class CO2Sensor : public Sensor {
 public:
   CO2Sensor();
-  void setup(MenuHandler *handler);
+  bool setup(MenuHandler *handler);
   void loop() {};
   const char* getSensorId();
   float getValue();
   void getData(LinkedList<Pair*> *data);
   const char* getName() {
-    return "CO2";
+    return "CM110x";
   }
 
 private:

@@ -29,7 +29,7 @@ extern "C" {
 #include "destinations/CustomHTTPDest.hpp"
 #include "destinations/SerialDumpDest.hpp"
 #include "plugins/PropertyList.hpp"
-#include "plugins/TimerManager.hpp"
+//#include "plugins/TimerManager.hpp"
 #include "plugins/PowerManager.hpp"
 #include "sensors/SI7021Sensor.hpp"
 #include "sensors/BME280Sensor.hpp"
@@ -42,11 +42,14 @@ extern "C" {
 #include "destinations/RFDest.hpp"
 #include <RTCMemStore.hpp>
 #include <ESP8266WiFiMulti.h>
+//#include "plugins/WifiStuff.hpp"
 #include "plugins/NeopixelVE.hpp"
 #include <I2CHelper.hpp>
 #include "plugins/LoggingPrinter.hpp"
 
-#define BUILD_NUM "20170103"
+#define BUILD_NUM "20170124"
+//#define HARDCODED_SENSORS "CM110x,SI7021,"
+
 
 //#define SERIAL_PORT LOGGER
 #define EE_WIFI_SSID F("wifi.ssid")
@@ -79,13 +82,13 @@ extern "C" {
 
 #define LED_START         F("95lnln")
 #define LED_START_DS      F("95lnlnln")
-#define LED_NO_I2C        F("rlnrln")
-#define LED_LOST_I2C      F("rynryn")
+#define LED_NO_I2C        F("rlrlrld")
+#define LED_LOST_I2C      F("ryryryd")
 #define LED_WIFI_SEARCH   F("cb")
-#define LED_WIFI_FOUND    F("ggggn")
-#define LED_WIFI_FAILED   F("rrrrn")
-#define LED_SEND_OK       F("gng")
-#define LED_SEND_FAILED   F("rnrnr")
+#define LED_WIFI_FOUND    F("cncncnd")
+#define LED_WIFI_FAILED   F("rcrcrcnd")
+#define LED_SEND_OK       F("ngngngd")
+#define LED_SEND_FAILED   F("nrnrnrd")
 #define LED_GO_DEEPSLEEP
 // #define EE_WIFI_SSID_30B 0
 // #define EE_WIFI_P1_30B 30
@@ -109,6 +112,9 @@ extern "C" {
 #define SAP_IOT_DEVID "spDvId"
 #define SAP_IOT_TOKEN "spTok"
 #define SAP_IOT_BTN_MSGID "spBtMID"
+
+//#define PERF(str) LOGGER << str << ":" << millis() << endl;
+#define PERF(str)
 //#define H801_API_KEY "h801key"
 //#define XX_SND_INT  "xxSndInt"
 //#define XX_SND_THR  "xxSndThr"
@@ -117,7 +123,6 @@ extern "C" {
 #define HTTPS_STR "https://"
 
 void OTA_registerCommands(MenuHandler *handler);
-void WIFI_registerCommands(MenuHandler *handler);
 void MQTT_RegisterCommands(MenuHandler *handler);
 void VESP_registerCommands(MenuHandler *handler);
 void CO2_registerCommands(MenuHandler *handler);
@@ -128,7 +133,7 @@ void setSendThreshold(const char *line);
 // void getTS(const char* line);
 // void sendTS();
 // void testUBI();
-void setWifi(const char* p);
+//void setWifi(const char* p);
 // void atCIPSTART(const char *p);
 // void mockATCommand(const char *line);
 // void cfgGENIOT(const char *p);
@@ -141,7 +146,7 @@ void sendMQTT(String msg);
 // int processResponseCodeATFW(HTTPClient *http, int rc);
 char *extractStringFromQuotes(const char* src, char *dest, int destSize);
 void storeToEE(int address, const char *str, int maxLength);
-void handleWifi();
+//void handleWifi();
 // void connectToWifi(const char *s1, const char *s2, const char *s3);
 // void wifiScanNetworks();
 // int wifiConnectToStoredSSID();
@@ -157,7 +162,7 @@ void putJSONConfig(const char *key, int value, boolean commit = true);
 void putJSONConfig(const char *key, const char *value, boolean isArrayValue = false, boolean commit = true);
 void dumpTemp();
 void factoryReset(char *line = NULL);
-void activeWait();
+//void activeWait();
 char *getJSONConfig(const char *item, char *buf, char *p1 = NULL, char *p3=NULL);
 //void testJSON(const char *ignore);
 // void testHttpUpdate();
@@ -237,6 +242,7 @@ extern bool shouldSend;
 extern boolean DEBUG;
 extern boolean SKIP_LOOP;
 extern MenuHandler menuHandler;
+extern String storedSensors;
 extern Timer *tmrStopLED;
 extern LinkedList<Plugin *> plugins;
 extern LinkedList<Sensor *> sensors;
@@ -247,7 +253,7 @@ extern char commonBuffer200[200];
 extern CustomHTTPDest customHTTPDest;
 extern SerialDumpDest serialDumpDest;
 extern PropertyListClass PropertyList;
-extern TimerManagerClass TimerManager;
+//extern TimerManagerClass TimerManager;
 extern PowerManagerClass PowerManager;
 extern SI7021Sensor si7021Sensor;
 extern BME280Sensor bme280Sensor;
@@ -261,19 +267,21 @@ extern RTCMemStore rtcMemStore;
 extern ESP8266WiFiMulti  *wifiMulti;
 extern RFDest rfDest;
 extern LoggingPrinter LOGGER;
+//extern WifiStuffClass WifiStuff;
 //extern NeopixelVE neopixel;
 
 //void MigrateSettingsIfNeeded();
 void onStopLED();
-void loop_IntThrHandler();
-void setup_IntThrHandler(MenuHandler *handler);
+//void loop_IntThrHandler();
+//void setup_IntThrHandler(MenuHandler *handler);
 
 void registerDestination(Destination *destination);
 void registerPlugin(Plugin *plugin);
 void registerSensor(Sensor *sensor);
-wl_status_t waitForWifi(uint16_t timeoutMs = 15000);
-void wifiConnectMulti();
-void startAutoWifiConfig(const char *ch);
-void wifiOff();
+//wl_status_t waitForWifi(uint16_t timeoutMs = 15000);
+//void wifiConnectMulti();
+//void startAutoWifiConfig(const char *ch);
+//void wifiOff();
 void fireEvent(const char *name);
+void initDecimalSeparator();
 #endif

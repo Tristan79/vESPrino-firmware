@@ -11,6 +11,8 @@
 #include "MenuHandler.hpp"
 #include "plugins/PropertyList.hpp"
 #include "plugins/AT_FW_Plugin.hpp"
+#include "plugins/WifiStuff.hpp"
+extern WifiStuffClass WifiStuff;
 
 #define PROP_BLYNK_ENABLED F("blynk.enabled")
 #define PROP_BLYNK_AUTH F("blynk.auth")
@@ -22,9 +24,10 @@ BlynkDest::BlynkDest() {
   registerDestination(this);
 }
 
-void BlynkDest::setup(MenuHandler *handler) {
+bool BlynkDest::setup(MenuHandler *handler) {
   //handler->registerCommand(new MenuEntry(F("serial_dump_toggle"), CMD_EXACT, &BlynkDest::toggle, F("serial_dump_toggle toggle serial dump output")));
   enabled = PropertyList.readBoolProperty(PROP_BLYNK_ENABLED);
+  return enabled;
   // if (enabled) {
   //   menuHandler.scheduleCommand("nop 0");
   // }
@@ -32,7 +35,7 @@ void BlynkDest::setup(MenuHandler *handler) {
 
 void BlynkDest::loop() {
   if (!enabled) return;
-  if (waitForWifi() != WL_CONNECTED) return;
+  if (WifiStuff.waitForWifi() != WL_CONNECTED) return;
   if (!calledConfig) {
     _blynkWifiClient = new WiFiClient();
     _blynkTransport = new BlynkArduinoClient(*_blynkWifiClient);

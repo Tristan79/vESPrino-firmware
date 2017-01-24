@@ -3,7 +3,7 @@
 
 #include "interfaces/Plugin.hpp"
 #include "MenuHandler.hpp"
-#include "common.hpp"
+//#include "common.hpp"
 #include <NeoPixelBus.h>
 #define TOTAL_COLORS 5
 #define Cred     RgbColor(255, 0, 0)
@@ -19,10 +19,11 @@
 #define Cwhite   RgbColor(255, 255, 255)
 #define Cblack   RgbColor(0)
 
+enum SignalType {SIGNAL_DEBUG, SIGNAL_FIRST};
 class NeopixelVE : public Plugin {
 public:
   NeopixelVE();
-  void setup(MenuHandler *handler);
+  bool setup(MenuHandler *handler);
   const char* getName() {
     return "Neopixel";
   }
@@ -34,7 +35,9 @@ public:
   void cmdLedSetBrgInst(const __FlashStringHelper* s) {cmdLedSetBrgInst(String(s).c_str());};
   void cmdLedHandleModeInst(const __FlashStringHelper* s){cmdLedHandleModeInst(String(s).c_str());};
   void handleSequence(const char *seq);
-  void signal(const __FlashStringHelper *seq);
+  void signal(const __FlashStringHelper *seq, SignalType sig = SIGNAL_DEBUG);
+  int getAmbientLightRaw();
+  int getAmbientLight(int stopMs);
 private:
   static void cmdLedHandleColor(const char* line);
   static void cmdLedSetBrg(const char* line);
@@ -44,6 +47,7 @@ private:
   uint32_t lastChange = 0;
   float ledBrg = 0.7f;
   int ledMode = 0;
+  RgbColor currentColor = Cblack;
   //const RgbColor allColors[] = {Cred, Cpink, Clila, Cviolet, Cblue, Cmblue, Ccyan, Cgreen, Cyellow, Corange};
 
 
